@@ -1,22 +1,36 @@
 import { Template } from 'meteor/templating';
 import { ReactiveVar } from 'meteor/reactive-var';
+import { Meteor } from 'meteor/meteor';
+import '../imports/startup/accounts-config.js';
 
 import './main.html';
 
-Template.hello.onCreated(function helloOnCreated() {
-  // counter starts at 0
-  this.counter = new ReactiveVar(0);
-});
+if (Meteor.isClient) {
+  Template.messages.helpers({
+      messages: function() {
+          return Messages.find({}, { sort: { time: -1}});
+      }
+  });
 
-Template.hello.helpers({
-  counter() {
-    return Template.instance().counter.get();
-  },
-});
+  Template.input.events = {
+    'keydown input#message' : function (event) {
+      if (event.which == 13) { // 13 is the enter key event
+        if (Meteor.user())
+          var name = Meteor.user().username;
+        else
+          var name = 'Anonymous';
+        var message = document.getElementById('message');
+        if (message.value != '') {
+          Messages.insert({
+            name: name,
+            message: message.value,
+            time: Date.now(),
+          });
 
-Template.hello.events({
-  'click button'(event, instance) {
-    // increment the counter when button is clicked
-    instance.counter.set(instance.counter.get() + 1);
-  },
-});
+          document.getElementById('message').value = '';
+          message.value = '';
+        }
+      }
+    }
+  }
+}
